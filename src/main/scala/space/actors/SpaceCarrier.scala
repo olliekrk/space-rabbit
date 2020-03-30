@@ -3,7 +3,8 @@ package space.actors
 import com.rabbitmq.client.{AMQP, Channel, DefaultConsumer, Envelope}
 import rabbitmq.RabbitConnectivity._
 import space._
-import space.messaging.{SpaceTask, SpaceTaskType}
+import space.messaging.SpaceInfoType.TaskConfirmation
+import space.messaging.{SpaceInfo, SpaceTask, SpaceTaskType}
 import util.FakeUtils._
 import util.SerializationUtils._
 import util.TryUtils._
@@ -29,10 +30,10 @@ case class SpaceCarrier(override val name: String)(implicit override val channel
       try {
         val task = fromJSON[SpaceTask](new String(body, SPACE_CHARSET))
         channel.basicAck(envelope.getDeliveryTag, false)
-        produceInfo(s"Carrier: $name completed: $task", s"$SPACE_AGENCY_ROUTING_KEY.${task.agencyName}")
+        val info = SpaceInfo(TaskConfirmation(task.agencyName), s"Carrier: $name completed: $task")
+        produceInfo(info)
       } catch {
-        case ex: Exception =>
-          logger.warn(s"Failed to complete task: ${ex.getMessage}")
+        case ex: Exception => logger.warn(s"Failed to complete task: ${ex.getMessage}")
       }
   }
 

@@ -22,8 +22,8 @@ case class SpaceAgency(override val name: String)(implicit override val channel:
 
   def produceTask(taskType: SpaceTaskType): Unit = {
     val task = SpaceTask(taskType, name, fakeDescription)
-    val serializedTask = task.toJSON.getBytes(SPACE_CHARSET)
-    channel.basicPublish(SPACE_EXCHANGE_NAME, taskType.routingKey, null, serializedTask)
+    val taskSerialized = task.toJSON.getBytes(SPACE_CHARSET)
+    channel.basicPublish(SPACE_EXCHANGE_NAME, taskType.routingKey, null, taskSerialized)
     logger.info(s"Successfully scheduled new task: $task to: ${taskType.routingKey}")
   }
 

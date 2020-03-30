@@ -3,9 +3,9 @@ package space.actors
 import com.rabbitmq.client.{AMQP, Channel, DefaultConsumer, Envelope}
 import com.typesafe.scalalogging.LazyLogging
 import rabbitmq.RabbitConnectivity._
-import space.{SPACE_CHARSET, SPACE_EXCHANGE_NAME}
-
-import scala.util.{Failure, Success, Try}
+import space.messaging.SpaceInfo
+import space.{SPACE_CHARSET, SPACE_EXCHANGE_NAME, _}
+import util.SerializationUtils._
 
 trait SpaceActor extends LazyLogging {
 
@@ -32,14 +32,14 @@ trait SpaceInfoConsumer extends SpaceActor {
     override def handleDelivery(consumerTag: String,
                                 envelope: Envelope,
                                 properties: AMQP.BasicProperties,
-                                body: Array[Byte]): Unit = Try {
-      val message = new String(body, SPACE_CHARSET)
-      channel.basicAck(envelope.getDeliveryTag, false)
-      message
-    } match {
-      case Success(message) => logger.info(s"Received: $message")
-      case Failure(exception) => logger.warn(s"Failed to receive info: ${exception.getMessage}")
-    }
+                                body: Array[Byte]): Unit =
+      try {
+        val info = fromJSON[SpaceInfo](new String(body, SPACE_CHARSET))
+        channel.basicAck(envelope.getDeliveryTag, false)
+        logger.info(s"Received info: $info")
+      } catch {
+        case ex: Exception => logger.warn(s"Failed to receive info: ${ex.getMessage}")
+      }
   }
 
   def consumeInfo(): Unit = {
@@ -55,9 +55,15 @@ trait SpaceInfoConsumer extends SpaceActor {
 
 trait SpaceInfoProducer extends SpaceActor {
 
-  def produceInfo(message: String, routingKey: String): Unit = {
-    channel.basicPublish(SPACE_EXCHANGE_NAME, routingKey, null, message.getBytes(SPACE_CHARSET))
-    logger.info(s"Sent: $message to: $routingKey")
+  def produceInfo(spaceInfo: SpaceInfo): Unit = {
+    val infoSerialized = spaceInfo.toJSON.getBytes(SPACE_CHARSET)
+
+    println {
+      spaceInfo.toJSON
+    }
+
+    channel.basicPublish(SPACE_EXCHANGE_NAME, spaceInfo.infoType.routingKey, null, infoSerialized)
+    logger.info(s"Sent info: $spaceInfo")
   }
 
 }

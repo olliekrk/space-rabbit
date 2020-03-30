@@ -1,8 +1,9 @@
 import java.nio.charset.Charset
 
-import org.json4s.JsonAST.JString
+import org.json4s.JsonAST.{JField, JNothing, JObject, JString}
 import org.json4s.{CustomSerializer, DefaultFormats, Formats, Serializer}
-import space.messaging.SpaceTaskType
+import space.messaging.SpaceInfoType.TaskConfirmation
+import space.messaging._
 
 package object space {
 
@@ -27,8 +28,22 @@ package object space {
     }
     ))
 
+    private val spaceInfoTypeSerializer = new CustomSerializer[SpaceInfoType]((_: Formats) => ( {
+      case JObject(JField("name", JString("confirmation")) :: JField("agencyName", JString(agencyName)) :: Nil) =>
+        TaskConfirmation(agencyName)
+      case JString(name) =>
+        SpaceInfoType.byName(name)
+    }, {
+      case infoType: TaskConfirmation =>
+        JObject(JField("name", JString(infoType.name)) :: JField("agencyName", JString(infoType.agencyName)) :: Nil)
+      case infoType: SpaceInfoType =>
+        JString(infoType.name)
+    }
+    ))
+
     val serializers: Seq[Serializer[_]] = Seq(
-      spaceTaskTypeSerializer
+      spaceTaskTypeSerializer,
+      spaceInfoTypeSerializer
     )
   }
 

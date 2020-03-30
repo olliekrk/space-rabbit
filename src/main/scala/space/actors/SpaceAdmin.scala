@@ -1,15 +1,16 @@
 package space.actors
 
-import com.rabbitmq.client.Channel
+import com.rabbitmq.client.{AMQP, Channel, DefaultConsumer, Envelope}
 import rabbitmq.RabbitConnectivity.{createConnection, sanitizeName, _}
-import space.messaging.SpaceInfoType
+import space.messaging.{SpaceInfo, SpaceInfoType}
 import space.{SPACE_CHARSET, SPACE_EXCHANGE_NAME, SPACE_ROUTING_KEY}
 import util.FakeUtils.fakeCompany
 import util.TryUtils.tryWith
 
 import scala.io.StdIn
 
-case class SpaceAdmin(override val name: String)(implicit override val channel: Channel) extends SpaceInfoConsumer {
+case class SpaceAdmin(override val name: String)(implicit override val channel: Channel)
+  extends SpaceInfoConsumer with SpaceInfoProducer {
 
   override val infoQueueName = s"spaceAdmin_$name"
 
@@ -17,10 +18,19 @@ case class SpaceAdmin(override val name: String)(implicit override val channel: 
     s"$SPACE_ROUTING_KEY.#"
   )
 
-  def broadcastInfo(broadcastType: SpaceInfoType, broadcastMessage: String): Unit = {
-    val message = s"[ADMIN: $name][SCOPE: ${broadcastType.routingKey}]: $broadcastMessage"
-    channel.basicPublish(SPACE_EXCHANGE_NAME, broadcastType.routingKey, null, message.getBytes(SPACE_CHARSET))
-    logger.info(s"Broadcasted: $broadcastMessage in scope: ${broadcastType.routingKey}")
+  // override to handle raw JSON strings instead of deserialization
+  override def infoConsumer(): DefaultConsumer = new DefaultConsumer(channel) {
+    override def handleDelivery(consumerTag: String,
+                                envelope: Envelope,
+                                properties: AMQP.BasicProperties,
+                                body: Array[Byte]): Unit =
+      try {
+        val rawMessage = new String(body, SPACE_CHARSET)
+        channel.basicAck(envelope.getDeliveryTag, false)
+        logger.info(s"Received raw info: $rawMessage")
+      } catch {
+        case ex: Exception => logger.warn(s"Failed to receive info: ${ex.getMessage}")
+      }
   }
 }
 
@@ -40,8 +50,10 @@ object SpaceAdmin extends App {
         SpaceInfoType.byName.get(StdIn.readLine()) match {
           case Some(infoType) =>
             println("Provide message:")
-            admin.broadcastInfo(infoType, StdIn.readLine())
-          case None => println("Invalid admin broadcast type.")
+            val spaceInfo = SpaceInfo(infoType, s"[ADMIN: ${admin.name}][SCOPE: ${infoType.routingKey}]: ${StdIn.readLine()}")
+            admin.produceInfo(spaceInfo)
+          case None =>
+            println("Invalid admin broadcast type.")
         }
       }
 
