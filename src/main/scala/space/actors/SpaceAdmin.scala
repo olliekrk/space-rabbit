@@ -50,8 +50,8 @@ object SpaceAdmin extends App {
         SpaceInfoType.byName.get(StdIn.readLine()) match {
           case Some(infoType) =>
             println("Provide message:")
-            val spaceInfo = SpaceInfo(infoType, s"[ADMIN: ${admin.name}][SCOPE: ${infoType.routingKey}]: ${StdIn.readLine()}")
-            admin.produceInfo(spaceInfo)
+            val infoMessage = s"[ADMIN: ${admin.name}][SCOPE: ${infoType.routingKey}]: ${StdIn.readLine()}"
+            admin.produceInfo(SpaceInfo(infoType, infoMessage))
           case None =>
             println("Invalid admin broadcast type.")
         }

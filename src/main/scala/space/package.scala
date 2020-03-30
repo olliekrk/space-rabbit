@@ -1,6 +1,6 @@
 import java.nio.charset.Charset
 
-import org.json4s.JsonAST.{JField, JNothing, JObject, JString}
+import org.json4s.JsonAST.{JField, JObject, JString}
 import org.json4s.{CustomSerializer, DefaultFormats, Formats, Serializer}
 import space.messaging.SpaceInfoType.TaskConfirmation
 import space.messaging._

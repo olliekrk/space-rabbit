@@ -57,11 +57,6 @@ trait SpaceInfoProducer extends SpaceActor {
 
   def produceInfo(spaceInfo: SpaceInfo): Unit = {
     val infoSerialized = spaceInfo.toJSON.getBytes(SPACE_CHARSET)
-
-    println {
-      spaceInfo.toJSON
-    }
-
     channel.basicPublish(SPACE_EXCHANGE_NAME, spaceInfo.infoType.routingKey, null, infoSerialized)
     logger.info(s"Sent info: $spaceInfo")
   }
