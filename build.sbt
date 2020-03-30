@@ -17,14 +17,10 @@ libraryDependencies ++= Seq(
   // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
   "org.slf4j" % "slf4j-simple" % "1.7.30",
 
-//  // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-//  "org.slf4j" % "slf4j-api" % "1.6.2",
-//
-//  // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
-//  "org.slf4j" % "slf4j-simple" % "1.6.2",
-//
   // https://mvnrepository.com/artifact/com.typesafe.scala-logging/scala-logging
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
 
-
 )
+
+// https://mvnrepository.com/artifact/org.json4s/json4s-native
+libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.7"

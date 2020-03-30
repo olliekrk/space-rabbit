@@ -5,6 +5,7 @@ import rabbitmq.RabbitConnectivity._
 import space._
 import space.messaging.{SpaceTask, SpaceTaskType}
 import util.FakeUtils._
+import util.SerializationUtils._
 import util.TryUtils._
 
 import scala.io.StdIn
@@ -20,8 +21,8 @@ case class SpaceAgency(override val name: String)(implicit override val channel:
   )
 
   def produceTask(taskType: SpaceTaskType): Unit = {
-    val task = SpaceTask(taskType, name)
-    val serializedTask = task.toString.getBytes(SPACE_CHARSET) // todo: serialize
+    val task = SpaceTask(taskType, name, fakeDescription)
+    val serializedTask = task.toJSON.getBytes(SPACE_CHARSET)
     channel.basicPublish(SPACE_EXCHANGE_NAME, taskType.routingKey, null, serializedTask)
     logger.info(s"Successfully scheduled new task: $task to: ${taskType.routingKey}")
   }

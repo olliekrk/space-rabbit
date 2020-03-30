@@ -8,4 +8,6 @@ object FakeUtils {
 
   def fakeCompany: String = faker.company().name()
 
+  def fakeDescription: String = faker.chuckNorris().fact()
+
 }

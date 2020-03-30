@@ -49,7 +49,7 @@ trait SpaceInfoConsumer extends SpaceActor {
 
   def consumeFromQueue(queueName: String, callback: => DefaultConsumer): Unit = {
     channel.basicConsume(queueName, false, callback)
-    logger.info(s"Consuming tasks on queue: $queueName")
+    logger.info(s"Listening on queue: $queueName")
   }
 }
 

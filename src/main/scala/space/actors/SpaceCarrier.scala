@@ -3,12 +3,12 @@ package space.actors
 import com.rabbitmq.client.{AMQP, Channel, DefaultConsumer, Envelope}
 import rabbitmq.RabbitConnectivity._
 import space._
-import space.messaging.SpaceTaskType
+import space.messaging.{SpaceTask, SpaceTaskType}
 import util.FakeUtils._
+import util.SerializationUtils._
 import util.TryUtils._
 
 import scala.io.StdIn
-import scala.util.{Failure, Success, Try}
 
 case class SpaceCarrier(override val name: String)(implicit override val channel: Channel)
   extends SpaceInfoConsumer with SpaceInfoProducer {
@@ -25,17 +25,15 @@ case class SpaceCarrier(override val name: String)(implicit override val channel
     override def handleDelivery(consumerTag: String,
                                 envelope: Envelope,
                                 properties: AMQP.BasicProperties,
-                                body: Array[Byte]): Unit = Try {
-      // todo: deserialize SpaceTask from body & log
-      new String(body, SPACE_CHARSET)
-      // todo: extract agency name from message
-    } match {
-      case Success(message) =>
+                                body: Array[Byte]): Unit =
+      try {
+        val task = fromJSON[SpaceTask](new String(body, SPACE_CHARSET))
         channel.basicAck(envelope.getDeliveryTag, false)
-        produceInfo(s"Carrier: $name completed: $message", s"$SPACE_AGENCY_ROUTING_KEY.TODO")
-      case Failure(exception) =>
-        logger.warn(s"Failed to complete task: ${exception.getMessage}")
-    }
+        produceInfo(s"Carrier: $name completed: $task", s"$SPACE_AGENCY_ROUTING_KEY.${task.agencyName}")
+      } catch {
+        case ex: Exception =>
+          logger.warn(s"Failed to complete task: ${ex.getMessage}")
+      }
   }
 
   def consumeTasks(taskTypes: Iterable[SpaceTaskType]): Unit =
