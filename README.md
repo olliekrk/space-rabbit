@@ -1,5 +1,5 @@
 # Space Rabbit
-> Short project using RabbitMQ client.
+> Short university task with RabbitMQ client.
 
 * Space agencies can publish tasks of 3 types: 
   * Cargo
